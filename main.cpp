@@ -5,7 +5,7 @@
 using namespace std;
 
 int main() {
-    KVStore kv;
+  KVStore kv(3);
     CommandParser parser(kv);
 
     string line;
