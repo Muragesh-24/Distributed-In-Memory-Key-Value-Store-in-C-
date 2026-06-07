@@ -17,7 +17,7 @@ vector<string> CommandParser::split(const string& input) {
     return tokens;
 }
 
-string CommandParser::execute(const string& input) {
+    string CommandParser::execute(const string& input) {
     vector<string> tokens = split(input);
 
     if (tokens.empty()) {
@@ -48,6 +48,24 @@ string CommandParser::execute(const string& input) {
         }
 
         return kv.del(tokens[1]);
+    }
+
+    if (command == "EXPIRE") {
+        if (tokens.size() != 3) {
+            return "ERROR: Usage EXPIRE key seconds";
+        }
+
+        int seconds = stoi(tokens[2]);
+
+        return kv.expire(tokens[1], seconds);
+    }
+
+    if (command == "TTL") {
+        if (tokens.size() != 2) {
+            return "ERROR: Usage TTL key";
+        }
+
+        return kv.ttl(tokens[1]);
     }
 
     if (command == "PING") {
