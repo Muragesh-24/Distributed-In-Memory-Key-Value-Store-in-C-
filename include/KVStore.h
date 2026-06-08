@@ -14,11 +14,12 @@ private:
     list<pair<string, string>> cacheList;
     unordered_map<string, list<pair<string, string>>::iterator> cacheMap;
 
-    unordered_map<string, chrono::steady_clock::time_point> expiryMap;
+    unordered_map<string, long long> expiryMap;
 
     void moveToFront(const string& key);
     bool isExpired(const string& key);
     void removeKey(const string& key);
+    long long currentTimestamp();
 
 public:
     KVStore(int cap = 3);
@@ -28,5 +29,6 @@ public:
     string del(const string& key);
 
     string expire(const string& key, int seconds);
+    string expireAt(const string& key, long long expiryTimestamp);
     string ttl(const string& key);
 };

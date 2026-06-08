@@ -1,5 +1,6 @@
 #include "CommandParser.h"
 #include <sstream>
+#include <algorithm>
 
 using namespace std;
 
@@ -17,7 +18,7 @@ vector<string> CommandParser::split(const string& input) {
     return tokens;
 }
 
-    string CommandParser::execute(const string& input) {
+string CommandParser::execute(const string& input) {
     vector<string> tokens = split(input);
 
     if (tokens.empty()) {
@@ -25,6 +26,8 @@ vector<string> CommandParser::split(const string& input) {
     }
 
     string command = tokens[0];
+
+    transform(command.begin(), command.end(), command.begin(), ::toupper);
 
     if (command == "SET") {
         if (tokens.size() < 3) {
@@ -58,6 +61,16 @@ vector<string> CommandParser::split(const string& input) {
         int seconds = stoi(tokens[2]);
 
         return kv.expire(tokens[1], seconds);
+    }
+
+    if (command == "EXPIREAT") {
+        if (tokens.size() != 3) {
+            return "ERROR: Usage EXPIREAT key timestamp";
+        }
+
+        long long timestamp = stoll(tokens[2]);
+
+        return kv.expireAt(tokens[1], timestamp);
     }
 
     if (command == "TTL") {

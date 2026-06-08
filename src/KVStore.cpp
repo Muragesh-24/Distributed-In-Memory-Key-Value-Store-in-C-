@@ -4,13 +4,18 @@ KVStore::KVStore(int cap) {
     capacity = cap;
 }
 
+long long KVStore::currentTimestamp() {
+    return chrono::duration_cast<chrono::seconds>(
+        chrono::system_clock::now().time_since_epoch()
+    ).count();
+}
+
 void KVStore::moveToFront(const string& key) {
     auto it = cacheMap[key];
 
     pair<string, string> keyValue = *it;
 
     cacheList.erase(it);
-
     cacheList.push_front(keyValue);
 
     cacheMap[key] = cacheList.begin();
@@ -21,9 +26,7 @@ bool KVStore::isExpired(const string& key) {
         return false;
     }
 
-    auto now = chrono::steady_clock::now();
-
-    return now >= expiryMap[key];
+    return currentTimestamp() >= expiryMap[key];
 }
 
 void KVStore::removeKey(const string& key) {
@@ -40,12 +43,16 @@ void KVStore::removeKey(const string& key) {
 
 string KVStore::set(const string& key, const string& value) {
     if (cacheMap.find(key) != cacheMap.end()) {
-        auto it = cacheMap[key];
-        it->second = value;
+        if (isExpired(key)) {
+            removeKey(key);
+        } else {
+            auto it = cacheMap[key];
+            it->second = value;
 
-        moveToFront(key);
+            moveToFront(key);
 
-        return "OK";
+            return "OK";
+        }
     }
 
     if ((int)cacheList.size() == capacity) {
@@ -98,9 +105,23 @@ string KVStore::expire(const string& key, int seconds) {
         return "NOT_FOUND";
     }
 
-    auto expiryTime = chrono::steady_clock::now() + chrono::seconds(seconds);
+    long long expiryTimestamp = currentTimestamp() + seconds;
+    expiryMap[key] = expiryTimestamp;
 
-    expiryMap[key] = expiryTime;
+    return "OK";
+}
+
+string KVStore::expireAt(const string& key, long long expiryTimestamp) {
+    if (cacheMap.find(key) == cacheMap.end()) {
+        return "NOT_FOUND";
+    }
+
+    expiryMap[key] = expiryTimestamp;
+
+    if (isExpired(key)) {
+        removeKey(key);
+        return "NOT_FOUND";
+    }
 
     return "OK";
 }
@@ -110,17 +131,16 @@ string KVStore::ttl(const string& key) {
         return "NOT_FOUND";
     }
 
-    if (expiryMap.find(key) == expiryMap.end()) {
-        return "-1";
-    }
-
     if (isExpired(key)) {
         removeKey(key);
         return "NOT_FOUND";
     }
 
-    auto now = chrono::steady_clock::now();
-    auto remaining = chrono::duration_cast<chrono::seconds>(expiryMap[key] - now).count();
+    if (expiryMap.find(key) == expiryMap.end()) {
+        return "-1";
+    }
+
+    long long remaining = expiryMap[key] - currentTimestamp();
 
     return to_string(remaining);
 }
