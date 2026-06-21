@@ -5,13 +5,51 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-
+#include <sstream>
+#include <vector>
+#include <algorithm>
+#include <chrono>
 #include "KVStore.h"
 #include "CommandParser.h"
 #include "WAL.h"
 
 using namespace std;
+vector<string> splitCommand(string input) {
 
+    stringstream ss(input);
+    string word;
+
+    vector<string> tokens;
+
+    while(ss >> word) {
+        tokens.push_back(word);
+    }
+
+    return tokens;
+}
+
+
+string upper(string s) {
+
+    transform(
+        s.begin(),
+        s.end(),
+        s.begin(),
+        ::toupper
+    );
+
+    return s;
+}
+
+
+long long currentTime() {
+
+    return chrono::duration_cast<
+        chrono::seconds
+    >(
+        chrono::system_clock::now().time_since_epoch()
+    ).count();
+}
 int main() {
 
     KVStore kv(3);
@@ -100,7 +138,59 @@ int main() {
         string command(buffer);
 
       string response = parser.execute(command);
+vector<string> tokens = splitCommand(command);
 
+
+if(!tokens.empty()) {
+
+    string cmd = upper(tokens[0]);
+
+
+    if(response == "OK") {
+
+
+        if(cmd == "SET") {
+
+            wal.append(command);
+
+        }
+
+
+        else if(cmd == "DELETE") {
+
+            wal.append(command);
+
+        }
+
+
+        else if(cmd == "EXPIREAT") {
+
+            wal.append(command);
+
+        }
+
+
+        else if(cmd == "EXPIRE") {
+
+            if(tokens.size() == 3) {
+
+                long long expiry =
+                    currentTime()
+                    + stoll(tokens[2]);
+
+
+                string converted =
+                    "EXPIREAT "
+                    + tokens[1]
+                    + " "
+                    + to_string(expiry);
+
+
+                wal.append(converted);
+            }
+        }
+    }
+}
 send(
     clientFd,
     response.c_str(),
