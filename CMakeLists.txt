@@ -13,3 +13,10 @@ add_executable(kv_store
     src/CommandParser.cpp
     src/WAL.cpp
 )
+
+add_executable(kv_server
+    server_main.cpp
+    src/KVStore.cpp
+    src/CommandParser.cpp
+    src/WAL.cpp
+)
